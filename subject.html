@@ -39,7 +39,6 @@
     }
     .back-btn:hover { color: #e8e8e8; }
     .nav-title { font-size: 16px; font-weight: 500; }
-
     .tabs {
       display: flex;
       gap: 4px;
@@ -62,7 +61,6 @@
       transition: background .2s, color .2s;
     }
     .tab.active { background: #2a2a2a; color: #e8e8e8; }
-
     .section {
       display: none;
       width: 100%;
@@ -72,7 +70,6 @@
       gap: 20px;
     }
     .section.active { display: flex; }
-
     .top-row {
       display: flex;
       align-items: center;
@@ -90,10 +87,8 @@
       font-weight: 500;
     }
     .known-badge { font-size: 13px; color: #555; }
-
     .bar-wrap { width: 100%; height: 3px; background: #2a2a2a; border-radius: 2px; overflow: hidden; }
     .bar-fill  { height: 100%; width: 0%; background: #7c6ff7; border-radius: 2px; transition: width .4s; }
-
     .scene {
       width: 100%;
       height: 260px;
@@ -132,7 +127,6 @@
     }
     .katex { color: #e8e8e8 !important; }
     .katex-display { color: #e8e8e8 !important; }
-
     .btn-row { display: flex; gap: 10px; }
     .btn {
       flex: 1;
@@ -150,9 +144,7 @@
     .btn:active { transform: scale(0.97); }
     .btn.good { color: #5dc4a0; border-color: #1a3a30; background: #101e1a; }
     .btn.bad  { color: #e07070; border-color: #3a1f1f; background: #1e1414; }
-
     .hidden { display: none !important; }
-
     .done-screen {
       text-align: center;
       display: flex;
@@ -181,7 +173,6 @@
       cursor: pointer;
     }
     .restart-btn:hover { background: #222; }
-
     .progress-header {
       font-size: 13px;
       color: #555;
@@ -199,13 +190,6 @@
       gap: 12px;
     }
     .progress-item-text { font-size: 14px; color: #aaa; flex: 1; }
-    .progress-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: #2a2a2a;
-      flex-shrink: 0;
-    }
-
     .theory-card {
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
@@ -229,11 +213,7 @@
     .theory-card.open .theory-body { display: block; }
     .theory-empty { font-size: 14px; color: #444; text-align: center; padding: 32px 0; }
     video { width: 100%; border-radius: 10px; background: #000; }
-    .pdf-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .pdf-wrap { display: flex; flex-direction: column; gap: 10px; }
     .pdf-btn {
       display: flex;
       align-items: center;
@@ -258,6 +238,7 @@
     }
   </style>
 </head>
+
 <script type="importmap">
 {
   "imports": {
@@ -265,6 +246,7 @@
   }
 }
 </script>
+
 <body>
 
   <div class="top-nav">
@@ -278,17 +260,16 @@
     <button class="tab"        onclick="switchTab('progress', this)">Прогресс</button>
   </div>
 
-  <!-- Карточки -->
   <div class="section active" id="section-cards">
     <div class="top-row">
       <div class="streak-badge">🔥 <span id="streak-val">0</span> дней</div>
-      <div class="known-badge"><span id="known-count">0</span> / <span id="total-count">0</span> знаю</div>
+      <div class="known-badge"><span id="known-count">0</span> / <span id="total-count">0</span></div>
     </div>
     <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
 
     <div id="card-area">
       <div class="scene" id="scene" onclick="flip()">
-        <div class="card-inner">
+        <div class="card-inner" id="card-inner">
           <div class="card-face front">
             <div class="card-text" id="q-text"></div>
           </div>
@@ -317,33 +298,32 @@
         </div>
       </div>
       <div class="done-sub" id="done-sub"></div>
-      <button class="restart-btn" onclick="restart()">Повторить незнакомые</button>
+      <button class="restart-btn" onclick="restart()">Повторить снова</button>
     </div>
   </div>
 
-  <!-- Теория -->
   <div class="section" id="section-theory">
     <div id="theory-list"></div>
   </div>
 
-  <!-- Прогресс -->
   <div class="section" id="section-progress">
     <div class="progress-header">Все карточки</div>
     <div id="progress-list"></div>
   </div>
 
-  <!-- Данные предмета грузятся динамически -->
   <script type="module">
     import { fsrs, createEmptyCard, Rating } from 'ts-fsrs';
     const f = fsrs();
-    // Читаем ?subject=matan из URL
+
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject') || 'matan';
 
     const script = document.createElement('script');
     script.src = `data/${subjectId}.js`;
     script.onload = () => init(SUBJECT);
-    script.onerror = () => { document.body.innerHTML = '<p style="color:#555;padding:40px">Предмет не найден</p>'; };
+    script.onerror = () => {
+      document.body.innerHTML = '<p style="color:#555;padding:40px">Предмет не найден</p>';
+    };
     document.head.appendChild(script);
 
     const OPTS = {
@@ -358,11 +338,25 @@
       document.title = s.title;
       document.getElementById('nav-title').textContent = s.emoji + ' ' + s.title;
 
-      // Загружаем состояние карточек из localStorage
-      // Структура: { "0": {card: {...}, due: "2024-01-01"}, "1": {...} }
-      let cardStates = JSON.parse(localStorage.getItem('fsrs_' + s.id) || '{}');
+      // Стрик
+      let streak = parseInt(localStorage.getItem('streak') || '0');
+      const today = new Date().toDateString();
+      const lastDay = localStorage.getItem('lastDay');
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (lastDay === today) {
+        // не меняем
+      } else if (lastDay === yesterday) {
+        streak++;
+        localStorage.setItem('streak', streak);
+        localStorage.setItem('lastDay', today);
+      } else {
+        streak = 1;
+        localStorage.setItem('streak', streak);
+        localStorage.setItem('lastDay', today);
+      }
 
-      // Инициализируем новые карточки
+      // FSRS состояние
+      let cardStates = JSON.parse(localStorage.getItem('fsrs_' + s.id) || '{}');
       s.cards.forEach((_, i) => {
         if (!cardStates[String(i)]) {
           cardStates[String(i)] = {
@@ -376,18 +370,12 @@
         localStorage.setItem('fsrs_' + s.id, JSON.stringify(cardStates));
       }
 
-      // Карточки к повторению сегодня
       function getTodayQueue() {
         const now = new Date();
-        const due = [];
-        const notDue = [];
+        const due = [], notDue = [];
         s.cards.forEach((_, i) => {
-          const state = cardStates[String(i)];
-          if (new Date(state.due) <= now) {
-            due.push(i);
-          } else {
-            notDue.push(i);
-          }
+          if (new Date(cardStates[String(i)].due) <= now) due.push(i);
+          else notDue.push(i);
         });
         return [...due, ...notDue];
       }
@@ -395,6 +383,7 @@
       let queue = [], qIdx = 0;
       let sessionKnown = 0, sessionUnknown = 0;
       let flipped = false;
+      let isAnimating = false;
 
       function buildQueue() {
         queue = getTodayQueue();
@@ -403,28 +392,31 @@
         sessionUnknown = 0;
       }
 
-      window.flip = function() {
-      if (flipped) return;
-      flipped = true;
-      document.getElementById('scene').classList.add('flipped');
-      setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
-    };
+      function renderCard() {
+        const scene = document.getElementById('scene');
+        const cardInner = document.getElementById('card-inner');
 
-    function renderCard() {
-      const now = new Date();
-      const dueCount = s.cards.filter((_, i) =>
-        new Date(cardStates[String(i)].due) <= now
-      ).length;
+        // Если карточка перевёрнута — сначала анимируем назад
+        if (flipped) {
+          isAnimating = true;
+          scene.classList.remove('flipped');
+          // Ждём завершения анимации (0.5s) и только потом меняем контент
+          setTimeout(() => {
+            updateCardContent();
+            isAnimating = false;
+          }, 500);
+        } else {
+          updateCardContent();
+        }
+      }
 
-      const c = s.cards[queue[qIdx]];
-      const scene = document.getElementById('scene');
+      function updateCardContent() {
+        const now = new Date();
+        const dueCount = s.cards.filter((_, i) =>
+          new Date(cardStates[String(i)].due) <= now
+        ).length;
 
-      // Убираем анимацию, снимаем класс
-      scene.style.pointerEvents = 'none';
-      scene.classList.remove('flipped');
-
-      // Ждём пока браузер применит снятие класса, потом рендерим
-      setTimeout(() => {
+        const c = s.cards[queue[qIdx]];
         const elQ = document.getElementById('q-text');
         const elA = document.getElementById('a-text');
         elQ.innerHTML = c.q;
@@ -442,29 +434,38 @@
         document.getElementById('done-screen').classList.add('hidden');
 
         flipped = false;
-        scene.style.pointerEvents = '';
-      }, 520); // чуть больше чем transition: 0.5s
-    }
+      }
+
+      window.flip = function() {
+        if (flipped || isAnimating) return;
+        flipped = true;
+        document.getElementById('scene').classList.add('flipped');
+        setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
+      };
 
       window.rate = function(score) {
-      const i = String(queue[qIdx]);
-      const state = cardStates[i];
-      const now = new Date();
-
-      // Rating.Again = не знаю, Rating.Good = знаю
-      const rating = score === 1 ? Rating.Good : Rating.Again;
-      const result = f.next(state.card, now, rating);
-
-      cardStates[i] = {
-        card: result.card,
-        due: result.card.due.toISOString()
+        if (isAnimating) return;
+        const i = String(queue[qIdx]);
+        const state = cardStates[i];
+        const now = new Date();
+        const rating = score === 1 ? Rating.Good : Rating.Again;
+        const result = f.next(state.card, now, rating);
+        cardStates[i] = {
+          card: result.card,
+          due: result.card.due.toISOString()
+        };
+        saveStates();
+        if (score === 1) sessionKnown++; else sessionUnknown++;
+        qIdx++;
+        if (qIdx >= queue.length) {
+          // Сначала анимируем карточку назад, потом показываем экран завершения
+          document.getElementById('scene').classList.remove('flipped');
+          setTimeout(() => showDone(), 500);
+          flipped = false;
+        } else {
+          renderCard();
+        }
       };
-      saveStates();
-
-      if (score === 1) sessionKnown++; else sessionUnknown++;
-      qIdx++;
-      if (qIdx >= queue.length) showDone(); else renderCard();
-    };
 
       function showDone() {
         document.getElementById('card-area').style.display = 'none';
@@ -479,54 +480,35 @@
       }
 
       window.restart = function() {
-        const unknown = s.cards.map((_, i) => i).filter(i => !known[String(i)]);
-        if (unknown.length === 0) {
-          known = {};
-          localStorage.setItem('known_' + s.id, '{}');
-          buildQueue();
-        } else {
-          queue = unknown; qIdx = 0; sessionKnown = 0; sessionUnknown = 0;
-        }
+        buildQueue();
         renderCard();
       };
 
       // Теория
       const theoryList = document.getElementById('theory-list');
-      if (s.theory.length === 0) {
+      if (!s.theory || s.theory.length === 0) {
         theoryList.innerHTML = '<div class="theory-empty">Видео появятся после записи в Manim</div>';
       } else {
         s.theory.forEach((t, i) => {
           const div = document.createElement('div');
           div.className = 'theory-card';
           div.id = 'tc-' + i;
-
           let bodyContent = '';
           if (t.video) {
-            bodyContent = `
-              <video controls preload="none">
-                <source src="${t.video}" type="video/mp4">
-              </video>
-            `;
+            bodyContent = `<video controls preload="none"><source src="${t.video}" type="video/mp4"></video>`;
           } else if (t.pdf) {
             bodyContent = `
               <div class="pdf-wrap">
-                <a class="pdf-btn" href="${t.pdf}" target="_blank">
-                  <span>📄</span> Открыть PDF
-                </a>
+                <a class="pdf-btn" href="${t.pdf}" target="_blank">📄 Открыть PDF</a>
                 <iframe src="${t.pdf}" class="pdf-frame"></iframe>
-              </div>
-            `;
+              </div>`;
           }
-
           div.innerHTML = `
             <div class="theory-header" onclick="toggleTheory(${i})">
               <span class="theory-title">${t.title}</span>
               <span class="theory-arrow">›</span>
             </div>
-            <div class="theory-body">
-              ${bodyContent}
-            </div>
-          `;
+            <div class="theory-body">${bodyContent}</div>`;
           theoryList.appendChild(div);
         });
       }
@@ -537,37 +519,28 @@
 
       // Прогресс
       window.renderProgressList = function() {
-      const list = document.getElementById('progress-list');
-      list.innerHTML = '';
-      const now = new Date();
-      s.cards.forEach((c, i) => {
-        const state = cardStates[String(i)];
-        const due = new Date(state.due);
-        const isDue = due <= now;
-        const daysLeft = Math.ceil((due - now) / 86400000);
-
-        const item = document.createElement('div');
-        item.className = 'progress-item';
-
-        const text = document.createElement('div');
-        text.className = 'progress-item-text';
-        text.textContent = c.q.replace(/\$\$?[^$]+\$\$?/g, '(формула)');
-
-        const info = document.createElement('div');
-        info.style.cssText = 'font-size:12px; white-space:nowrap; flex-shrink:0;';
-        if (isDue) {
-          info.style.color = '#e07070';
-          info.textContent = 'сегодня';
-        } else {
-          info.style.color = '#555';
-          info.textContent = `через ${daysLeft} дн.`;
-        }
-
-        item.appendChild(text);
-        item.appendChild(info);
-        list.appendChild(item);
-      });
-    };
+        const list = document.getElementById('progress-list');
+        list.innerHTML = '';
+        const now = new Date();
+        s.cards.forEach((c, i) => {
+          const state = cardStates[String(i)];
+          const due = new Date(state.due);
+          const isDue = due <= now;
+          const daysLeft = Math.ceil((due - now) / 86400000);
+          const item = document.createElement('div');
+          item.className = 'progress-item';
+          const text = document.createElement('div');
+          text.className = 'progress-item-text';
+          text.textContent = c.q.replace(/\$\$?[^$]+\$\$?/g, '(формула)');
+          const info = document.createElement('div');
+          info.style.cssText = 'font-size:12px; white-space:nowrap; flex-shrink:0;';
+          info.style.color = isDue ? '#e07070' : '#555';
+          info.textContent = isDue ? 'сегодня' : `через ${daysLeft} дн.`;
+          item.appendChild(text);
+          item.appendChild(info);
+          list.appendChild(item);
+        });
+      };
 
       buildQueue();
       renderCard();
