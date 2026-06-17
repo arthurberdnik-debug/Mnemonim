@@ -19,9 +19,16 @@
       justify-content: center;
       padding: 24px;
       gap: 32px;
+
+      background-image: url('images/fey.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
     }
     .logo {
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
     .logo-title {
       font-size: 28px;
@@ -39,6 +46,8 @@
       gap: 12px;
       width: 100%;
       max-width: 400px;
+      position: relative;
+      z-index: 1;
     }
     .subject-card {
       display: flex;
@@ -68,11 +77,14 @@
       gap: 8px;
       font-size: 14px;
       color: #555;
+      position: relative;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
 
+  <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:0;"></div>
   <div class="logo">
     <div class="logo-title">Mnemonim</div>
     <div class="logo-sub">Ты будешь готов к сессии!</div>
