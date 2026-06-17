@@ -423,7 +423,18 @@
       document.getElementById('total-count').textContent = dueCount + ' на сегодня';
 
       flipped = false;
+      // Сбрасываем переворот без анимации
+      const cardInner = document.querySelector('.card-inner');
+      cardInner.style.transition = 'none';
+      cardInner.style.transform = 'rotateY(0deg)';
       document.getElementById('scene').classList.remove('flipped');
+
+      // Возвращаем анимацию через 50мс
+      setTimeout(() => {
+        cardInner.style.transition = '';
+        cardInner.style.transform = '';
+      }, 50);
+
       document.getElementById('btns').classList.add('hidden');
       document.getElementById('card-area').style.display = 'block';
       document.getElementById('done-screen').classList.add('hidden');
