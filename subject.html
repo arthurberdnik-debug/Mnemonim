@@ -403,13 +403,29 @@
         sessionUnknown = 0;
       }
 
-      function renderCard() {
+      window.flip = function() {
+      if (flipped) return;
+      flipped = true;
+      document.getElementById('scene').classList.add('flipped');
+      setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
+    };
+
+    function renderCard() {
       const now = new Date();
       const dueCount = s.cards.filter((_, i) =>
         new Date(cardStates[String(i)].due) <= now
       ).length;
 
       const c = s.cards[queue[qIdx]];
+
+      // Сначала убираем анимацию и сбрасываем положение
+      const scene = document.getElementById('scene');
+      const cardInner = document.querySelector('.card-inner');
+      scene.classList.remove('flipped');
+      cardInner.style.transition = 'none';
+      cardInner.style.transform = 'rotateY(0deg)';
+
+      // Рендерим содержимое
       const elQ = document.getElementById('q-text');
       const elA = document.getElementById('a-text');
       elQ.innerHTML = c.q;
@@ -417,35 +433,25 @@
       renderMathInElement(elQ, OPTS);
       renderMathInElement(elA, OPTS);
 
-      document.getElementById('bar').style.width = ((qIdx) / queue.length * 100) + '%';
+      document.getElementById('bar').style.width = (qIdx / queue.length * 100) + '%';
       document.getElementById('streak-val').textContent = streak;
       document.getElementById('known-count').textContent = sessionKnown;
       document.getElementById('total-count').textContent = dueCount + ' на сегодня';
 
-      flipped = false;
-      // Сбрасываем переворот без анимации
-      const cardInner = document.querySelector('.card-inner');
-      cardInner.style.transition = 'none';
-      cardInner.style.transform = 'rotateY(0deg)';
-      document.getElementById('scene').classList.remove('flipped');
-
-      // Возвращаем анимацию через 50мс
-      setTimeout(() => {
-        cardInner.style.transition = '';
-        cardInner.style.transform = '';
-      }, 50);
-
       document.getElementById('btns').classList.add('hidden');
       document.getElementById('card-area').style.display = 'block';
       document.getElementById('done-screen').classList.add('hidden');
-    }
 
-      window.flip = function() {
-        if (flipped) return;
-        flipped = true;
-        document.getElementById('scene').classList.add('flipped');
-        setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
-      };
+      flipped = false;
+
+      // Возвращаем анимацию после того как браузер применил сброс
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          cardInner.style.transition = '';
+          cardInner.style.transform = '';
+        });
+      });
+    }
 
       window.rate = function(score) {
       const i = String(queue[qIdx]);
