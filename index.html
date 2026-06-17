@@ -108,8 +108,11 @@
     // Рендерим карточки предметов
     const container = document.getElementById('subjects');
     subjects.forEach(s => {
-      const known = JSON.parse(localStorage.getItem('known_' + s.id) || '{}');
-      const knownCount = Object.values(known).filter(Boolean).length;
+      const fsrsData = JSON.parse(localStorage.getItem('fsrs_' + s.id) || '{}');
+      const now = new Date();
+      const knownCount = Object.values(fsrsData).filter(state => {
+        return state.card && state.card.reps > 0 && new Date(state.due) > now;
+      }).length;
 
       const a = document.createElement('a');
       a.className = 'subject-card';
