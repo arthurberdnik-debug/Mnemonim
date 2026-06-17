@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mnemonim</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 32px;
+    }
+    .logo {
+      text-align: center;
+    }
+    .logo-title {
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: -.02em;
+    }
+    .logo-sub {
+      font-size: 14px;
+      color: #555;
+      margin-top: 6px;
+    }
+    .subjects {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .subject-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 18px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .2s, background .2s;
+    }
+    .subject-card:hover {
+      background: #222;
+      border-color: #3a3560;
+    }
+    .subject-emoji { font-size: 28px; }
+    .subject-info { flex: 1; }
+    .subject-title { font-size: 16px; font-weight: 500; }
+    .subject-meta  { font-size: 13px; color: #555; margin-top: 3px; }
+    .subject-arrow { font-size: 20px; color: #333; }
+    .streak-global {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">
+    <div class="logo-title">Mnemonim</div>
+    <div class="logo-sub">Ты будешь готов к сессии!</div>
+  </div>
+
+  <div class="subjects" id="subjects"></div>
+
+  <div class="streak-global">🔥 <span id="streak-global">0</span> дней подряд</div>
+
+  <script>
+    const subjects = [
+      { id: 'matan',  title: 'Математический анализ', emoji: '📈', file: 'data/matan.js'  },
+      { id: 'diskra', title: 'Дискретная математика',  emoji: '🔷', file: 'data/diskra.js' },
+    ];
+
+    // Стрик
+    const streak = localStorage.getItem('streak') || '0';
+    document.getElementById('streak-global').textContent = streak;
+
+    // Рендерим карточки предметов
+    const container = document.getElementById('subjects');
+    subjects.forEach(s => {
+      const known = JSON.parse(localStorage.getItem('known_' + s.id) || '{}');
+      const knownCount = Object.values(known).filter(Boolean).length;
+
+      const a = document.createElement('a');
+      a.className = 'subject-card';
+      a.href = `subject.html?subject=${s.id}`;
+      a.innerHTML = `
+        <div class="subject-emoji">${s.emoji}</div>
+        <div class="subject-info">
+          <div class="subject-title">${s.title}</div>
+          <div class="subject-meta">Знаю ${knownCount} карточек</div>
+        </div>
+        <div class="subject-arrow">›</div>
+      `;
+      container.appendChild(a);
+    });
+  </script>
+
+</body>
+</html>

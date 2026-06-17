@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study App</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 20px;
+    }
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px 8px 4px 0;
+      line-height: 1;
+    }
+    .back-btn:hover { color: #e8e8e8; }
+    .nav-title { font-size: 16px; font-weight: 500; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 4px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: #666;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .tab.active { background: #2a2a2a; color: #e8e8e8; }
+
+    .section {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 20px;
+    }
+    .section.active { display: flex; }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .known-badge { font-size: 13px; color: #555; }
+
+    .bar-wrap { width: 100%; height: 3px; background: #2a2a2a; border-radius: 2px; overflow: hidden; }
+    .bar-fill  { height: 100%; width: 0%; background: #7c6ff7; border-radius: 2px; transition: width .4s; }
+
+    .scene {
+      width: 100%;
+      height: 260px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+    .card-inner {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+    }
+    .scene.flipped .card-inner { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; inset: 0;
+      background: #1a1a1a;
+      border-radius: 18px;
+      border: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-face.back {
+      transform: rotateY(180deg);
+      background: #1c1a2e;
+      border-color: #3a3560;
+    }
+    .card-text {
+      font-size: 18px;
+      line-height: 1.7;
+      text-align: center;
+      color: #e8e8e8;
+    }
+    .katex { color: #e8e8e8 !important; }
+    .katex-display { color: #e8e8e8 !important; }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn {
+      flex: 1;
+      padding: 13px 0;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: #1a1a1a;
+      color: #aaa;
+      transition: transform .1s, background .15s;
+    }
+    .btn:hover  { background: #222; }
+    .btn:active { transform: scale(0.97); }
+    .btn.good { color: #5dc4a0; border-color: #1a3a30; background: #101e1a; }
+    .btn.bad  { color: #e07070; border-color: #3a1f1f; background: #1e1414; }
+
+    .hidden { display: none !important; }
+
+    .done-screen {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px 0;
+    }
+    .done-emoji { font-size: 56px; }
+    .done-title { font-size: 22px; font-weight: 500; }
+    .done-sub   { font-size: 14px; color: #555; line-height: 1.6; }
+    .done-stats { display: flex; gap: 24px; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 500; }
+    .stat-num.green { color: #5dc4a0; }
+    .stat-num.red   { color: #e07070; }
+    .stat-label { font-size: 12px; color: #555; margin-top: 2px; }
+    .restart-btn {
+      padding: 12px 32px;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .restart-btn:hover { background: #222; }
+
+    .progress-header {
+      font-size: 13px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .progress-item {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .progress-item-text { font-size: 14px; color: #aaa; flex: 1; }
+    .progress-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #2a2a2a;
+      flex-shrink: 0;
+    }
+
+    .theory-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .theory-card:hover { border-color: #3a3560; }
+    .theory-card.open  { border-color: #3a3560; }
+    .theory-header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .theory-title { font-size: 15px; font-weight: 500; }
+    .theory-arrow { font-size: 18px; color: #555; transition: transform .3s; }
+    .theory-card.open .theory-arrow { transform: rotate(90deg); }
+    .theory-body { display: none; padding: 0 16px 16px; }
+    .theory-card.open .theory-body { display: block; }
+    .theory-empty { font-size: 14px; color: #444; text-align: center; padding: 32px 0; }
+    video { width: 100%; border-radius: 10px; background: #000; }
+  </style>
+</head>
+<body>
+
+  <div class="top-nav">
+    <button class="back-btn" onclick="window.location.href='index.html'">‹</button>
+    <div class="nav-title" id="nav-title"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('cards', this)">Карточки</button>
+    <button class="tab"        onclick="switchTab('theory', this)">Теория</button>
+    <button class="tab"        onclick="switchTab('progress', this)">Прогресс</button>
+  </div>
+
+  <!-- Карточки -->
+  <div class="section active" id="section-cards">
+    <div class="top-row">
+      <div class="streak-badge">🔥 <span id="streak-val">0</span> дней</div>
+      <div class="known-badge"><span id="known-count">0</span> / <span id="total-count">0</span> знаю</div>
+    </div>
+    <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
+
+    <div id="card-area">
+      <div class="scene" id="scene" onclick="flip()">
+        <div class="card-inner">
+          <div class="card-face front">
+            <div class="card-text" id="q-text"></div>
+          </div>
+          <div class="card-face back">
+            <div class="card-text" id="a-text"></div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row hidden" id="btns" style="margin-top:20px;">
+        <button class="btn bad"  onclick="rate(0)">Не знаю</button>
+        <button class="btn good" onclick="rate(1)">Знаю</button>
+      </div>
+    </div>
+
+    <div class="done-screen hidden" id="done-screen">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">Сессия завершена!</div>
+      <div class="done-stats">
+        <div class="stat">
+          <div class="stat-num green" id="done-known">0</div>
+          <div class="stat-label">знаю</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num red" id="done-unknown">0</div>
+          <div class="stat-label">не знаю</div>
+        </div>
+      </div>
+      <div class="done-sub" id="done-sub"></div>
+      <button class="restart-btn" onclick="restart()">Повторить незнакомые</button>
+    </div>
+  </div>
+
+  <!-- Теория -->
+  <div class="section" id="section-theory">
+    <div id="theory-list"></div>
+  </div>
+
+  <!-- Прогресс -->
+  <div class="section" id="section-progress">
+    <div class="progress-header">Все карточки</div>
+    <div id="progress-list"></div>
+  </div>
+
+  <!-- Данные предмета грузятся динамически -->
+  <script>
+    // Читаем ?subject=matan из URL
+    const params = new URLSearchParams(window.location.search);
+    const subjectId = params.get('subject') || 'matan';
+
+    const script = document.createElement('script');
+    script.src = `data/${subjectId}.js`;
+    script.onload = () => init(SUBJECT);
+    script.onerror = () => { document.body.innerHTML = '<p style="color:#555;padding:40px">Предмет не найден</p>'; };
+    document.head.appendChild(script);
+
+    const OPTS = {
+      delimiters: [
+        { left: "$$", right: "$$", display: true  },
+        { left: "$",  right: "$",  display: false },
+      ],
+      throwOnError: false
+    };
+
+    function init(s) {
+      document.title = s.title;
+      document.getElementById('nav-title').textContent = s.emoji + ' ' + s.title;
+
+      let known = JSON.parse(localStorage.getItem('known_' + s.id) || '{}');
+      let streak = parseInt(localStorage.getItem('streak') || '0');
+      let queue = [], qIdx = 0, flipped = false;
+      let sessionKnown = 0, sessionUnknown = 0;
+
+      function buildQueue() {
+        const unknown = s.cards.map((_, i) => i).filter(i => !known[String(i)]);
+        const knownIds = s.cards.map((_, i) => i).filter(i =>  known[String(i)]);
+        queue = [...unknown, ...knownIds];
+        qIdx = 0; sessionKnown = 0; sessionUnknown = 0;
+      }
+
+      function renderCard() {
+        const c = s.cards[queue[qIdx]];
+        const elQ = document.getElementById('q-text');
+        const elA = document.getElementById('a-text');
+        elQ.innerHTML = c.q;
+        elA.innerHTML = c.a;
+        renderMathInElement(elQ, OPTS);
+        renderMathInElement(elA, OPTS);
+
+        const knownCount = Object.values(known).filter(Boolean).length;
+        document.getElementById('bar').style.width = (knownCount / s.cards.length * 100) + '%';
+        document.getElementById('streak-val').textContent = streak;
+        document.getElementById('known-count').textContent = knownCount;
+        document.getElementById('total-count').textContent = s.cards.length;
+
+        flipped = false;
+        document.getElementById('scene').classList.remove('flipped');
+        document.getElementById('btns').classList.add('hidden');
+        document.getElementById('card-area').style.display = 'block';
+        document.getElementById('done-screen').classList.add('hidden');
+      }
+
+      window.flip = function() {
+        if (flipped) return;
+        flipped = true;
+        document.getElementById('scene').classList.add('flipped');
+        setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
+      };
+
+      window.rate = function(score) {
+        known[String(queue[qIdx])] = score === 1;
+        localStorage.setItem('known_' + s.id, JSON.stringify(known));
+        if (score === 1) sessionKnown++; else sessionUnknown++;
+        qIdx++;
+        if (qIdx >= queue.length) showDone(); else renderCard();
+      };
+
+      function showDone() {
+        document.getElementById('card-area').style.display = 'none';
+        document.getElementById('done-screen').classList.remove('hidden');
+        document.getElementById('done-known').textContent = sessionKnown;
+        document.getElementById('done-unknown').textContent = sessionUnknown;
+        const pct = Math.round(sessionKnown / s.cards.length * 100);
+        document.getElementById('done-sub').textContent =
+          pct === 100 ? 'Вы знаете все карточки! 🚀' :
+          pct >= 70   ? `${pct}% карточек — отличный результат!` :
+                        `${pct}% карточек — повторите незнакомые.`;
+      }
+
+      window.restart = function() {
+        const unknown = s.cards.map((_, i) => i).filter(i => !known[String(i)]);
+        if (unknown.length === 0) {
+          known = {};
+          localStorage.setItem('known_' + s.id, '{}');
+          buildQueue();
+        } else {
+          queue = unknown; qIdx = 0; sessionKnown = 0; sessionUnknown = 0;
+        }
+        renderCard();
+      };
+
+      // Теория
+      const theoryList = document.getElementById('theory-list');
+      if (s.theory.length === 0) {
+        theoryList.innerHTML = '<div class="theory-empty">Видео появятся после записи в Manim</div>';
+      } else {
+        s.theory.forEach((t, i) => {
+          const div = document.createElement('div');
+          div.className = 'theory-card';
+          div.id = 'tc-' + i;
+          div.innerHTML = `
+            <div class="theory-header" onclick="toggleTheory(${i})">
+              <span class="theory-title">${t.title}</span>
+              <span class="theory-arrow">›</span>
+            </div>
+            <div class="theory-body">
+              <video controls preload="none">
+                <source src="${t.video}" type="video/mp4">
+              </video>
+            </div>
+          `;
+          theoryList.appendChild(div);
+        });
+      }
+
+      window.toggleTheory = function(i) {
+        document.getElementById('tc-' + i).classList.toggle('open');
+      };
+
+      // Прогресс
+      window.renderProgressList = function() {
+        const list = document.getElementById('progress-list');
+        list.innerHTML = '';
+        s.cards.forEach((c, i) => {
+          const item = document.createElement('div');
+          item.className = 'progress-item';
+          const text = document.createElement('div');
+          text.className = 'progress-item-text';
+          text.textContent = c.q.replace(/\$\$?[^$]+\$\$?/g, '(формула)');
+          const dot = document.createElement('div');
+          dot.className = 'progress-dot';
+          const val = known[String(i)];
+          if (val === true)  dot.style.background = '#5dc4a0';
+          if (val === false) dot.style.background = '#e07070';
+          item.appendChild(text);
+          item.appendChild(dot);
+          list.appendChild(item);
+        });
+      };
+
+      buildQueue();
+      renderCard();
+    }
+
+    window.switchTab = function(name, btn) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('section-' + name).classList.add('active');
+      btn.classList.add('active');
+      if (name === 'progress') window.renderProgressList();
+    };
+  </script>
+
+</body>
+</html>

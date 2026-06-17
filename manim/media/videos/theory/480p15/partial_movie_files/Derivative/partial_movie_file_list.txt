@@ -1,0 +1,6 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/Arthur Berdnik/OneDrive/Desktop/study-app/manim/media/videos/theory/480p15/partial_movie_files/Derivative/1245868708_597953980_223132457.mp4'
+file 'file:C:/Users/Arthur Berdnik/OneDrive/Desktop/study-app/manim/media/videos/theory/480p15/partial_movie_files/Derivative/1798845450_3826904300_3637954057.mp4'
+file 'file:C:/Users/Arthur Berdnik/OneDrive/Desktop/study-app/manim/media/videos/theory/480p15/partial_movie_files/Derivative/1798845450_2574473371_2548193735.mp4'
+file 'file:C:/Users/Arthur Berdnik/OneDrive/Desktop/study-app/manim/media/videos/theory/480p15/partial_movie_files/Derivative/1798845450_1994035628_2829676712.mp4'
+file 'file:C:/Users/Arthur Berdnik/OneDrive/Desktop/study-app/manim/media/videos/theory/480p15/partial_movie_files/Derivative/1798845450_2872842549_4023674658.mp4'
