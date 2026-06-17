@@ -258,6 +258,13 @@
     }
   </style>
 </head>
+<script type="importmap">
+{
+  "imports": {
+    "ts-fsrs": "https://cdn.jsdelivr.net/npm/ts-fsrs@4.4.2/dist/index.mjs"
+  }
+}
+</script>
 <body>
 
   <div class="top-nav">
@@ -326,7 +333,9 @@
   </div>
 
   <!-- Данные предмета грузятся динамически -->
-  <script>
+  <script type="module">
+    import { fsrs, createEmptyCard, Rating } from 'ts-fsrs';
+    const f = fsrs();
     // Читаем ?subject=matan из URL
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject') || 'matan';
@@ -349,39 +358,76 @@
       document.title = s.title;
       document.getElementById('nav-title').textContent = s.emoji + ' ' + s.title;
 
-      let known = JSON.parse(localStorage.getItem('known_' + s.id) || '{}');
-      let streak = parseInt(localStorage.getItem('streak') || '0');
-      let queue = [], qIdx = 0, flipped = false;
+      // Загружаем состояние карточек из localStorage
+      // Структура: { "0": {card: {...}, due: "2024-01-01"}, "1": {...} }
+      let cardStates = JSON.parse(localStorage.getItem('fsrs_' + s.id) || '{}');
+
+      // Инициализируем новые карточки
+      s.cards.forEach((_, i) => {
+        if (!cardStates[String(i)]) {
+          cardStates[String(i)] = {
+            card: createEmptyCard(),
+            due: new Date().toISOString()
+          };
+        }
+      });
+
+      function saveStates() {
+        localStorage.setItem('fsrs_' + s.id, JSON.stringify(cardStates));
+      }
+
+      // Карточки к повторению сегодня
+      function getTodayQueue() {
+        const now = new Date();
+        const due = [];
+        const notDue = [];
+        s.cards.forEach((_, i) => {
+          const state = cardStates[String(i)];
+          if (new Date(state.due) <= now) {
+            due.push(i);
+          } else {
+            notDue.push(i);
+          }
+        });
+        return [...due, ...notDue];
+      }
+
+      let queue = [], qIdx = 0;
       let sessionKnown = 0, sessionUnknown = 0;
+      let flipped = false;
 
       function buildQueue() {
-        const unknown = s.cards.map((_, i) => i).filter(i => !known[String(i)]);
-        const knownIds = s.cards.map((_, i) => i).filter(i =>  known[String(i)]);
-        queue = [...unknown, ...knownIds];
-        qIdx = 0; sessionKnown = 0; sessionUnknown = 0;
+        queue = getTodayQueue();
+        qIdx = 0;
+        sessionKnown = 0;
+        sessionUnknown = 0;
       }
 
       function renderCard() {
-        const c = s.cards[queue[qIdx]];
-        const elQ = document.getElementById('q-text');
-        const elA = document.getElementById('a-text');
-        elQ.innerHTML = c.q;
-        elA.innerHTML = c.a;
-        renderMathInElement(elQ, OPTS);
-        renderMathInElement(elA, OPTS);
+      const now = new Date();
+      const dueCount = s.cards.filter((_, i) =>
+        new Date(cardStates[String(i)].due) <= now
+      ).length;
 
-        const knownCount = Object.values(known).filter(Boolean).length;
-        document.getElementById('bar').style.width = (knownCount / s.cards.length * 100) + '%';
-        document.getElementById('streak-val').textContent = streak;
-        document.getElementById('known-count').textContent = knownCount;
-        document.getElementById('total-count').textContent = s.cards.length;
+      const c = s.cards[queue[qIdx]];
+      const elQ = document.getElementById('q-text');
+      const elA = document.getElementById('a-text');
+      elQ.innerHTML = c.q;
+      elA.innerHTML = c.a;
+      renderMathInElement(elQ, OPTS);
+      renderMathInElement(elA, OPTS);
 
-        flipped = false;
-        document.getElementById('scene').classList.remove('flipped');
-        document.getElementById('btns').classList.add('hidden');
-        document.getElementById('card-area').style.display = 'block';
-        document.getElementById('done-screen').classList.add('hidden');
-      }
+      document.getElementById('bar').style.width = ((qIdx) / queue.length * 100) + '%';
+      document.getElementById('streak-val').textContent = streak;
+      document.getElementById('known-count').textContent = sessionKnown;
+      document.getElementById('total-count').textContent = dueCount + ' на сегодня';
+
+      flipped = false;
+      document.getElementById('scene').classList.remove('flipped');
+      document.getElementById('btns').classList.add('hidden');
+      document.getElementById('card-area').style.display = 'block';
+      document.getElementById('done-screen').classList.add('hidden');
+    }
 
       window.flip = function() {
         if (flipped) return;
@@ -391,12 +437,24 @@
       };
 
       window.rate = function(score) {
-        known[String(queue[qIdx])] = score === 1;
-        localStorage.setItem('known_' + s.id, JSON.stringify(known));
-        if (score === 1) sessionKnown++; else sessionUnknown++;
-        qIdx++;
-        if (qIdx >= queue.length) showDone(); else renderCard();
+      const i = String(queue[qIdx]);
+      const state = cardStates[i];
+      const now = new Date();
+
+      // Rating.Again = не знаю, Rating.Good = знаю
+      const rating = score === 1 ? Rating.Good : Rating.Again;
+      const result = f.next(state.card, now, rating);
+
+      cardStates[i] = {
+        card: result.card,
+        due: result.card.due.toISOString()
       };
+      saveStates();
+
+      if (score === 1) sessionKnown++; else sessionUnknown++;
+      qIdx++;
+      if (qIdx >= queue.length) showDone(); else renderCard();
+    };
 
       function showDone() {
         document.getElementById('card-area').style.display = 'none';
@@ -469,24 +527,37 @@
 
       // Прогресс
       window.renderProgressList = function() {
-        const list = document.getElementById('progress-list');
-        list.innerHTML = '';
-        s.cards.forEach((c, i) => {
-          const item = document.createElement('div');
-          item.className = 'progress-item';
-          const text = document.createElement('div');
-          text.className = 'progress-item-text';
-          text.textContent = c.q.replace(/\$\$?[^$]+\$\$?/g, '(формула)');
-          const dot = document.createElement('div');
-          dot.className = 'progress-dot';
-          const val = known[String(i)];
-          if (val === true)  dot.style.background = '#5dc4a0';
-          if (val === false) dot.style.background = '#e07070';
-          item.appendChild(text);
-          item.appendChild(dot);
-          list.appendChild(item);
-        });
-      };
+      const list = document.getElementById('progress-list');
+      list.innerHTML = '';
+      const now = new Date();
+      s.cards.forEach((c, i) => {
+        const state = cardStates[String(i)];
+        const due = new Date(state.due);
+        const isDue = due <= now;
+        const daysLeft = Math.ceil((due - now) / 86400000);
+
+        const item = document.createElement('div');
+        item.className = 'progress-item';
+
+        const text = document.createElement('div');
+        text.className = 'progress-item-text';
+        text.textContent = c.q.replace(/\$\$?[^$]+\$\$?/g, '(формула)');
+
+        const info = document.createElement('div');
+        info.style.cssText = 'font-size:12px; white-space:nowrap; flex-shrink:0;';
+        if (isDue) {
+          info.style.color = '#e07070';
+          info.textContent = 'сегодня';
+        } else {
+          info.style.color = '#555';
+          info.textContent = `через ${daysLeft} дн.`;
+        }
+
+        item.appendChild(text);
+        item.appendChild(info);
+        list.appendChild(item);
+      });
+    };
 
       buildQueue();
       renderCard();
