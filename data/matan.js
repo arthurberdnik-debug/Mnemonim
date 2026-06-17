@@ -29,5 +29,9 @@ const SUBJECT = {
       title: 'Производная — определение',
       video: 'videos/Derivative.mp4'
     },
+    {
+    title: 'Лекция 1',
+    pdf: 'PDFs/TestingSTD.pdf'
+    },
   ]
 };
