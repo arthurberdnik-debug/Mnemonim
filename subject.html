@@ -417,40 +417,33 @@
       ).length;
 
       const c = s.cards[queue[qIdx]];
-
-      // Сначала убираем анимацию и сбрасываем положение
       const scene = document.getElementById('scene');
-      const cardInner = document.querySelector('.card-inner');
+
+      // Убираем анимацию, снимаем класс
+      scene.style.pointerEvents = 'none';
       scene.classList.remove('flipped');
-      cardInner.style.transition = 'none';
-      cardInner.style.transform = 'rotateY(0deg)';
 
-      // Рендерим содержимое
-      const elQ = document.getElementById('q-text');
-      const elA = document.getElementById('a-text');
-      elQ.innerHTML = c.q;
-      elA.innerHTML = c.a;
-      renderMathInElement(elQ, OPTS);
-      renderMathInElement(elA, OPTS);
+      // Ждём пока браузер применит снятие класса, потом рендерим
+      setTimeout(() => {
+        const elQ = document.getElementById('q-text');
+        const elA = document.getElementById('a-text');
+        elQ.innerHTML = c.q;
+        elA.innerHTML = c.a;
+        renderMathInElement(elQ, OPTS);
+        renderMathInElement(elA, OPTS);
 
-      document.getElementById('bar').style.width = (qIdx / queue.length * 100) + '%';
-      document.getElementById('streak-val').textContent = streak;
-      document.getElementById('known-count').textContent = sessionKnown;
-      document.getElementById('total-count').textContent = dueCount + ' на сегодня';
+        document.getElementById('bar').style.width = (qIdx / queue.length * 100) + '%';
+        document.getElementById('streak-val').textContent = streak;
+        document.getElementById('known-count').textContent = sessionKnown;
+        document.getElementById('total-count').textContent = dueCount + ' на сегодня';
 
-      document.getElementById('btns').classList.add('hidden');
-      document.getElementById('card-area').style.display = 'block';
-      document.getElementById('done-screen').classList.add('hidden');
+        document.getElementById('btns').classList.add('hidden');
+        document.getElementById('card-area').style.display = 'block';
+        document.getElementById('done-screen').classList.add('hidden');
 
-      flipped = false;
-
-      // Возвращаем анимацию после того как браузер применил сброс
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          cardInner.style.transition = '';
-          cardInner.style.transform = '';
-        });
-      });
+        flipped = false;
+        scene.style.pointerEvents = '';
+      }, 520); // чуть больше чем transition: 0.5s
     }
 
       window.rate = function(score) {
