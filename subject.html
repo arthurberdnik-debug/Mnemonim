@@ -317,8 +317,7 @@
         <div id="answer-feedback" style="display:none;"></div>
         <button class="submit-btn" onclick="checkAnswer()">Проверить</button>
       </div>
-
-      
+    </div>
 
     <div class="done-screen hidden" id="done-screen">
       <div class="done-emoji">🎉</div>
@@ -326,11 +325,11 @@
       <div class="done-stats">
         <div class="stat">
           <div class="stat-num green" id="done-known">0</div>
-          <div class="stat-label">знаю</div>
+          <div class="stat-label">правильно</div>
         </div>
         <div class="stat">
           <div class="stat-num red" id="done-unknown">0</div>
-          <div class="stat-label">не знаю</div>
+          <div class="stat-label">неправильно</div>
         </div>
       </div>
       <div class="done-sub" id="done-sub"></div>
@@ -420,6 +419,7 @@
       let sessionKnown = 0, sessionUnknown = 0;
       let flipped = false;
       let isAnimating = false;
+      let pendingRate = null; // оценка ожидающая завершения анимации
 
       function buildQueue() {
         queue = getTodayQueue();
@@ -429,25 +429,20 @@
       }
 
       // ======= НОРМАЛИЗАЦИЯ =======
-      function normalizeText(str) {
-        return str.trim().toLowerCase();
-      }
-      function normalizeLatex(str) {
-        return str.replace(/\s+/g, '').toLowerCase();
-      }
-      function normalizeSimple(str) {
-        return str.replace(/\s+/g, '').toLowerCase();
-      }
+      function normalizeText(str)   { return str.trim().toLowerCase(); }
+      function normalizeLatex(str)  { return str.replace(/\s+/g, '').toLowerCase(); }
+      function normalizeSimple(str) { return str.replace(/\s+/g, '').toLowerCase(); }
 
-      // ======= РЕНДЕР КАРТОЧКИ =======
+      // ======= РЕНДЕР =======
       function renderCard() {
         if (flipped) {
           isAnimating = true;
           document.getElementById('scene').classList.remove('flipped');
           setTimeout(() => {
-            updateCardContent();
             isAnimating = false;
-          }, 500);
+            flipped = false;
+            updateCardContent();
+          }, 520);
         } else {
           updateCardContent();
         }
@@ -488,10 +483,10 @@
         renderMathInElement(elA, OPTS);
 
         // Сброс поля ввода
-        const inputArea    = document.getElementById('input-area');
-        const answerInput  = document.getElementById('answer-input');
-        const feedback     = document.getElementById('answer-feedback');
-        const preview      = document.getElementById('formula-preview');
+        const inputArea   = document.getElementById('input-area');
+        const answerInput = document.getElementById('answer-input');
+        const feedback    = document.getElementById('answer-feedback');
+        const preview     = document.getElementById('formula-preview');
 
         answerInput.value = '';
         answerInput.classList.remove('correct', 'wrong');
@@ -503,7 +498,6 @@
         preview.innerHTML = '';
 
         inputArea.style.display = 'block';
-        document.getElementById('btns').classList.add('hidden');
         document.getElementById('card-area').style.display = 'block';
         document.getElementById('done-screen').classList.add('hidden');
 
@@ -550,8 +544,33 @@
         document.getElementById('scene').classList.add('flipped');
       };
 
+      // ======= ОЦЕНКА (вызывается автоматически) =======
+      function doRate(score) {
+        const i = String(queue[qIdx]);
+        const state = cardStates[i];
+        const now = new Date();
+        const rating = score === 1 ? Rating.Good : Rating.Again;
+        const result = f.next(state.card, now, rating);
+        cardStates[i] = {
+          card: result.card,
+          due: result.card.due.toISOString()
+        };
+        saveStates();
+        if (score === 1) sessionKnown++; else sessionUnknown++;
+        qIdx++;
+        if (qIdx >= queue.length) {
+          // завершение — убираем переворот и показываем итог
+          document.getElementById('scene').classList.remove('flipped');
+          flipped = false;
+          setTimeout(() => showDone(), 520);
+        } else {
+          renderCard();
+        }
+      }
+
       // ======= ПРОВЕРКА ОТВЕТА =======
       window.checkAnswer = function() {
+        if (isAnimating) return;
         const c = s.cards[queue[qIdx]];
         const answerInput = document.getElementById('answer-input');
         const feedback    = document.getElementById('answer-feedback');
@@ -576,20 +595,15 @@
           feedback.className = 'correct';
           feedback.textContent = '✓ Правильно!';
           setTimeout(() => {
-          document.getElementById('input-area').style.display = 'none';
-          window.flip();
-          setTimeout(() => rate(1), 600);
-        }, 800);
+            document.getElementById('input-area').style.display = 'none';
+            window.flip();
+            // после анимации переворота — засчитываем и идём дальше
+            setTimeout(() => doRate(1), 600);
+          }, 800);
         } else {
           answerInput.classList.add('wrong');
           feedback.className = 'wrong';
-          // Показываем правильный ответ
-          if (c.type === 'formula') {
-            const correctEl = document.createElement('span');
-            feedback.textContent = '✗ Неверно. Правильно: ';
-            feedback.appendChild(correctEl);
-            katex.render(c.a, correctEl, { throwOnError: false, displayMode: false });
-          } else if (c.type === 'simple') {
+          if (c.type === 'formula' || c.type === 'simple') {
             const correctEl = document.createElement('span');
             feedback.textContent = '✗ Неверно. Правильно: ';
             feedback.appendChild(correctEl);
@@ -602,40 +616,16 @@
             feedback.textContent = `✗ Неверно. Правильно: ${c.a}`;
           }
           setTimeout(() => {
-          document.getElementById('input-area').style.display = 'none';
-          window.flip();
-          setTimeout(() => rate(0), 600);
-        }, 1500);
+            document.getElementById('input-area').style.display = 'none';
+            window.flip();
+            setTimeout(() => doRate(0), 600);
+          }, 1500);
         }
       };
 
       document.getElementById('answer-input').addEventListener('keydown', e => {
         if (e.key === 'Enter') window.checkAnswer();
       });
-
-      // ======= ОЦЕНКА =======
-      window.rate = function(score) {
-        if (isAnimating) return;
-        const i = String(queue[qIdx]);
-        const state = cardStates[i];
-        const now = new Date();
-        const rating = score === 1 ? Rating.Good : Rating.Again;
-        const result = f.next(state.card, now, rating);
-        cardStates[i] = {
-          card: result.card,
-          due: result.card.due.toISOString()
-        };
-        saveStates();
-        if (score === 1) sessionKnown++; else sessionUnknown++;
-        qIdx++;
-        if (qIdx >= queue.length) {
-          document.getElementById('scene').classList.remove('flipped');
-          flipped = false;
-          setTimeout(() => showDone(), 500);
-        } else {
-          renderCard();
-        }
-      };
 
       function showDone() {
         document.getElementById('card-area').style.display = 'none';
