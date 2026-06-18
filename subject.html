@@ -93,7 +93,7 @@
       width: 100%;
       height: 260px;
       perspective: 1000px;
-      cursor: pointer;
+      cursor: default;
     }
     .card-inner {
       width: 100%; height: 100%;
@@ -108,6 +108,7 @@
       border-radius: 18px;
       border: 1px solid #919191;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 32px;
@@ -236,6 +237,45 @@
       border-radius: 10px;
       background: #fff;
     }
+    #answer-input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      font-size: 15px;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color .2s;
+    }
+    #answer-input:focus { border-color: #7c6ff7; }
+    #answer-input.correct { border-color: #5dc4a0; background: #101e1a; }
+    #answer-input.wrong   { border-color: #e07070; background: #1e1414; }
+    #answer-feedback {
+      font-size: 13px;
+      margin-top: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    #answer-feedback.correct { color: #5dc4a0; background: #101e1a; border: 1px solid #1a3a30; }
+    #answer-feedback.wrong   { color: #e07070; background: #1e1414; border: 1px solid #3a1f1f; }
+    #formula-preview { color: #e8e8e8; padding: 8px; min-height: 40px; text-align: center; }
+    .submit-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px 0;
+      border-radius: 12px;
+      border: 1px solid #7c6ff7;
+      background: #1a1830;
+      color: #9b93f0;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .submit-btn:hover { background: #222040; }
   </style>
 </head>
 
@@ -268,9 +308,10 @@
     <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
 
     <div id="card-area">
-      <div class="scene" id="scene" onclick="flip()">
+      <div class="scene" id="scene">
         <div class="card-inner" id="card-inner">
           <div class="card-face front">
+            <img id="q-img" src="" alt="" style="display:none; max-width:100%; max-height:120px; border-radius:10px; margin-bottom:12px;">
             <div class="card-text" id="q-text"></div>
           </div>
           <div class="card-face back">
@@ -278,6 +319,22 @@
           </div>
         </div>
       </div>
+
+      <div id="input-area" style="margin-top:20px; display:none;">
+        <div id="formula-preview" style="display:none; margin-bottom:10px;"></div>
+        <input
+          id="answer-input"
+          type="text"
+          placeholder="Введите ответ..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        >
+        <div id="answer-feedback" style="display:none;"></div>
+        <button class="submit-btn" onclick="checkAnswer()">Проверить</button>
+      </div>
+
       <div class="btn-row hidden" id="btns" style="margin-top:20px;">
         <button class="btn bad"  onclick="rate(0)">Не знаю</button>
         <button class="btn good" onclick="rate(1)">Знаю</button>
@@ -355,7 +412,7 @@
         localStorage.setItem('lastDay', today);
       }
 
-      // FSRS состояние
+      // FSRS
       let cardStates = JSON.parse(localStorage.getItem('fsrs_' + s.id) || '{}');
       s.cards.forEach((_, i) => {
         if (!cardStates[String(i)]) {
@@ -392,15 +449,22 @@
         sessionUnknown = 0;
       }
 
-      function renderCard() {
-        const scene = document.getElementById('scene');
-        const cardInner = document.getElementById('card-inner');
+      // ======= НОРМАЛИЗАЦИЯ =======
+      function normalizeText(str) {
+        return str.trim().toLowerCase();
+      }
+      function normalizeLatex(str) {
+        return str.replace(/\s+/g, '').toLowerCase();
+      }
+      function normalizeSimple(str) {
+        return str.replace(/\s+/g, '').toLowerCase();
+      }
 
-        // Если карточка перевёрнута — сначала анимируем назад
+      // ======= РЕНДЕР КАРТОЧКИ =======
+      function renderCard() {
         if (flipped) {
           isAnimating = true;
-          scene.classList.remove('flipped');
-          // Ждём завершения анимации (0.5s) и только потом меняем контент
+          document.getElementById('scene').classList.remove('flipped');
           setTimeout(() => {
             updateCardContent();
             isAnimating = false;
@@ -417,32 +481,160 @@
         ).length;
 
         const c = s.cards[queue[qIdx]];
+
+        // Картинка
+        const qImg = document.getElementById('q-img');
+        if (c.img) {
+          qImg.src = c.img;
+          qImg.style.display = 'block';
+        } else {
+          qImg.style.display = 'none';
+          qImg.src = '';
+        }
+
+        // Вопрос
         const elQ = document.getElementById('q-text');
-        const elA = document.getElementById('a-text');
         elQ.innerHTML = c.q;
-        elA.innerHTML = c.a;
         renderMathInElement(elQ, OPTS);
+
+        // Ответ на обратной стороне
+        const elA = document.getElementById('a-text');
+        if (c.type === 'formula') {
+          elA.innerHTML = '$$' + c.a + '$$';
+        } else if (c.type === 'simple') {
+          elA.innerHTML = '$' + c.a + '$';
+        } else {
+          elA.innerHTML = c.a;
+        }
         renderMathInElement(elA, OPTS);
+
+        // Сброс поля ввода
+        const inputArea    = document.getElementById('input-area');
+        const answerInput  = document.getElementById('answer-input');
+        const feedback     = document.getElementById('answer-feedback');
+        const preview      = document.getElementById('formula-preview');
+
+        answerInput.value = '';
+        answerInput.classList.remove('correct', 'wrong');
+        answerInput.disabled = false;
+        feedback.style.display = 'none';
+        feedback.className = '';
+        feedback.textContent = '';
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+
+        inputArea.style.display = 'block';
+        document.getElementById('btns').classList.add('hidden');
+        document.getElementById('card-area').style.display = 'block';
+        document.getElementById('done-screen').classList.add('hidden');
+
+        // Плейсхолдер и live-preview по типу
+        if (c.type === 'formula') {
+          preview.style.display = 'block';
+          answerInput.placeholder = 'Введите LaTeX, например: \\frac{a}{b}';
+          answerInput.oninput = () => {
+            try {
+              katex.render(answerInput.value, preview, { throwOnError: false, displayMode: true });
+            } catch(e) {
+              preview.textContent = answerInput.value;
+            }
+          };
+        } else if (c.type === 'simple') {
+          preview.style.display = 'block';
+          answerInput.placeholder = 'Например: I=U/R';
+          answerInput.oninput = () => {
+            try {
+              katex.render(answerInput.value, preview, { throwOnError: false, displayMode: true });
+            } catch(e) {
+              preview.textContent = answerInput.value;
+            }
+          };
+        } else {
+          answerInput.placeholder = 'Введите ответ...';
+          answerInput.oninput = null;
+          preview.style.display = 'none';
+        }
 
         document.getElementById('bar').style.width = (qIdx / queue.length * 100) + '%';
         document.getElementById('streak-val').textContent = streak;
         document.getElementById('known-count').textContent = sessionKnown;
         document.getElementById('total-count').textContent = dueCount + ' на сегодня';
 
-        document.getElementById('btns').classList.add('hidden');
-        document.getElementById('card-area').style.display = 'block';
-        document.getElementById('done-screen').classList.add('hidden');
-
         flipped = false;
+        setTimeout(() => answerInput.focus(), 100);
       }
 
+      // ======= ПЕРЕВОРОТ =======
       window.flip = function() {
         if (flipped || isAnimating) return;
         flipped = true;
         document.getElementById('scene').classList.add('flipped');
-        setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 300);
       };
 
+      // ======= ПРОВЕРКА ОТВЕТА =======
+      window.checkAnswer = function() {
+        const c = s.cards[queue[qIdx]];
+        const answerInput = document.getElementById('answer-input');
+        const feedback    = document.getElementById('answer-feedback');
+        const userAnswer  = answerInput.value;
+
+        if (!userAnswer.trim()) return;
+
+        let correct = false;
+        if (c.type === 'formula') {
+          correct = normalizeLatex(userAnswer) === normalizeLatex(c.a);
+        } else if (c.type === 'simple') {
+          correct = normalizeSimple(userAnswer) === normalizeSimple(c.a);
+        } else {
+          correct = normalizeText(userAnswer) === normalizeText(c.a);
+        }
+
+        answerInput.disabled = true;
+        feedback.style.display = 'block';
+
+        if (correct) {
+          answerInput.classList.add('correct');
+          feedback.className = 'correct';
+          feedback.textContent = '✓ Правильно!';
+          setTimeout(() => {
+            document.getElementById('input-area').style.display = 'none';
+            window.flip();
+            setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 500);
+          }, 800);
+        } else {
+          answerInput.classList.add('wrong');
+          feedback.className = 'wrong';
+          // Показываем правильный ответ
+          if (c.type === 'formula') {
+            const correctEl = document.createElement('span');
+            feedback.textContent = '✗ Неверно. Правильно: ';
+            feedback.appendChild(correctEl);
+            katex.render(c.a, correctEl, { throwOnError: false, displayMode: false });
+          } else if (c.type === 'simple') {
+            const correctEl = document.createElement('span');
+            feedback.textContent = '✗ Неверно. Правильно: ';
+            feedback.appendChild(correctEl);
+            try {
+              katex.render(c.a, correctEl, { throwOnError: false, displayMode: false });
+            } catch(e) {
+              correctEl.textContent = c.a;
+            }
+          } else {
+            feedback.textContent = `✗ Неверно. Правильно: ${c.a}`;
+          }
+          setTimeout(() => {
+            document.getElementById('input-area').style.display = 'none';
+            window.flip();
+            setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 500);
+          }, 1500);
+        }
+      };
+
+      document.getElementById('answer-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') window.checkAnswer();
+      });
+
+      // ======= ОЦЕНКА =======
       window.rate = function(score) {
         if (isAnimating) return;
         const i = String(queue[qIdx]);
@@ -458,10 +650,9 @@
         if (score === 1) sessionKnown++; else sessionUnknown++;
         qIdx++;
         if (qIdx >= queue.length) {
-          // Сначала анимируем карточку назад, потом показываем экран завершения
           document.getElementById('scene').classList.remove('flipped');
-          setTimeout(() => showDone(), 500);
           flipped = false;
+          setTimeout(() => showDone(), 500);
         } else {
           renderCard();
         }
@@ -484,7 +675,7 @@
         renderCard();
       };
 
-      // Теория
+      // ======= ТЕОРИЯ =======
       const theoryList = document.getElementById('theory-list');
       if (!s.theory || s.theory.length === 0) {
         theoryList.innerHTML = '<div class="theory-empty">Видео появятся после записи в Manim</div>';
@@ -517,7 +708,7 @@
         document.getElementById('tc-' + i).classList.toggle('open');
       };
 
-      // Прогресс
+      // ======= ПРОГРЕСС =======
       window.renderProgressList = function() {
         const list = document.getElementById('progress-list');
         list.innerHTML = '';
