@@ -234,6 +234,21 @@
     }
     #answer-input:focus { border-color: #7c6ff7; }
     #answer-input.correct { border-color: #5dc4a0; background: #101e1a; }
+    #next-btn {
+      display: none;
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px 0;
+      border-radius: 12px;
+      border: 1px solid #7c6ff7;
+      background: #1a1830;
+      color: #9b93f0;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    #next-btn:hover { background: #222040; }
     #answer-input.wrong   { border-color: #e07070; background: #1e1414; }
     #answer-feedback {
       font-size: 13px;
@@ -305,9 +320,6 @@
 
       <div id="input-area" style="margin-top:20px; display:none;">
         <div id="formula-preview" style="display:none; margin-bottom:10px;"></div>
-        <button id="next-btn" style="display:none; margin-top:16px; width:100%; padding:13px 0; border-radius:12px; border:1px solid #7c6ff7; background:#1a1830; color:#9b93f0; font-size:14px; font-weight:500; cursor:pointer;">
-          Следующая →
-        </button>
         <input
           id="answer-input"
           type="text"
@@ -318,8 +330,9 @@
           spellcheck="false"
         >
         <div id="answer-feedback" style="display:none;"></div>
-        <button class="submit-btn" onclick="checkAnswer()">Проверить</button>
+        <button class="submit-btn" id="submit-btn" onclick="checkAnswer()">Проверить</button>
       </div>
+      <button id="next-btn">Следующая →</button>
     </div>
 
     <div class="done-screen hidden" id="done-screen">
@@ -500,6 +513,7 @@
         preview.style.display = 'none';
         preview.innerHTML = '';
         document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'block';
 
         inputArea.style.display = 'block';
         document.getElementById('card-area').style.display = 'block';
@@ -572,15 +586,6 @@
         }
       }
 
-      function showNextBtn(score) {
-      const btn = document.getElementById('next-btn');
-      btn.style.display = 'block';
-      btn.onclick = () => {
-        btn.style.display = 'none';
-        doRate(score);
-      };
-    }
-
       // ======= ПРОВЕРКА ОТВЕТА =======
       window.checkAnswer = function() {
         if (isAnimating) return;
@@ -602,17 +607,12 @@
 
         answerInput.disabled = true;
         feedback.style.display = 'block';
+        document.getElementById('submit-btn').style.display = 'none';
 
         if (correct) {
           answerInput.classList.add('correct');
           feedback.className = 'correct';
           feedback.textContent = '✓ Правильно!';
-          setTimeout(() => {
-          document.getElementById('input-area').style.display = 'none';
-          window.flip();
-          // показываем кнопку "Далее"
-          setTimeout(() => showNextBtn(1), 600);
-        }, 800);
         } else {
           answerInput.classList.add('wrong');
           feedback.className = 'wrong';
@@ -628,12 +628,17 @@
           } else {
             feedback.textContent = `✗ Неверно. Правильно: ${c.a}`;
           }
-          setTimeout(() => {
+        }
+
+        // Показываем кнопку "Следующая"
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.style.display = 'block';
+        nextBtn.onclick = () => {
+          nextBtn.style.display = 'none';
           document.getElementById('input-area').style.display = 'none';
           window.flip();
-          setTimeout(() => showNextBtn(0), 600);
-        }, 1500);
-        }
+          setTimeout(() => doRate(correct ? 1 : 0), 600);
+        };
       };
 
       document.getElementById('answer-input').addEventListener('keydown', e => {
