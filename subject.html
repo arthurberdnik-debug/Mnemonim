@@ -128,23 +128,6 @@
     }
     .katex { color: #e8e8e8 !important; }
     .katex-display { color: #e8e8e8 !important; }
-    .btn-row { display: flex; gap: 10px; }
-    .btn {
-      flex: 1;
-      padding: 13px 0;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      background: #1a1a1a;
-      color: #aaa;
-      transition: transform .1s, background .15s;
-    }
-    .btn:hover  { background: #222; }
-    .btn:active { transform: scale(0.97); }
-    .btn.good { color: #5dc4a0; border-color: #1a3a30; background: #101e1a; }
-    .btn.bad  { color: #e07070; border-color: #3a1f1f; background: #1e1414; }
     .hidden { display: none !important; }
     .done-screen {
       text-align: center;
@@ -335,11 +318,7 @@
         <button class="submit-btn" onclick="checkAnswer()">Проверить</button>
       </div>
 
-      <div class="btn-row hidden" id="btns" style="margin-top:20px;">
-        <button class="btn bad"  onclick="rate(0)">Не знаю</button>
-        <button class="btn good" onclick="rate(1)">Знаю</button>
-      </div>
-    </div>
+      
 
     <div class="done-screen hidden" id="done-screen">
       <div class="done-emoji">🎉</div>
@@ -597,10 +576,10 @@
           feedback.className = 'correct';
           feedback.textContent = '✓ Правильно!';
           setTimeout(() => {
-            document.getElementById('input-area').style.display = 'none';
-            window.flip();
-            setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 500);
-          }, 800);
+          document.getElementById('input-area').style.display = 'none';
+          window.flip();
+          setTimeout(() => rate(1), 600);
+        }, 800);
         } else {
           answerInput.classList.add('wrong');
           feedback.className = 'wrong';
@@ -623,10 +602,10 @@
             feedback.textContent = `✗ Неверно. Правильно: ${c.a}`;
           }
           setTimeout(() => {
-            document.getElementById('input-area').style.display = 'none';
-            window.flip();
-            setTimeout(() => document.getElementById('btns').classList.remove('hidden'), 500);
-          }, 1500);
+          document.getElementById('input-area').style.display = 'none';
+          window.flip();
+          setTimeout(() => rate(0), 600);
+        }, 1500);
         }
       };
 
