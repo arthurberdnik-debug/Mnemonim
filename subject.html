@@ -630,14 +630,20 @@
           }
         }
 
-        // Показываем кнопку "Следующая"
+        // Показываем кнопку "Показать ответ"
         const nextBtn = document.getElementById('next-btn');
+        nextBtn.textContent = 'Показать ответ';
         nextBtn.style.display = 'block';
         nextBtn.onclick = () => {
-          nextBtn.style.display = 'none';
+          // Первый клик — переворачиваем карточку и оставляем её "застывшей"
           document.getElementById('input-area').style.display = 'none';
           window.flip();
-          setTimeout(() => doRate(correct ? 1 : 0), 600);
+          nextBtn.textContent = 'Следующая →';
+          nextBtn.onclick = () => {
+            // Второй клик — переходим дальше
+            nextBtn.style.display = 'none';
+            doRate(correct ? 1 : 0);
+          };
         };
       };
 
