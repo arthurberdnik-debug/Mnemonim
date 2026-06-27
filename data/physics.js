@@ -2,7 +2,7 @@ const SUBJECT = {
   id: 'physics',
   title: 'Физика',
   emoji: '⚛️',
-  img: 'images/physics.png', 
+  img: 'images/physics.jpg', 
   cards: [
     {
       q: "Второй закон Ньютона",
