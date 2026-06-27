@@ -96,9 +96,9 @@
 
   <script>
     const subjects = [
-      { id: 'matan',  title: 'Математический анализ', emoji: '📈', file: 'data/matan.js'  },
-      { id: 'diskra', title: 'Дискретная математика',  emoji: '🔷', file: 'data/diskra.js' },
-      { id: 'physics', title: 'Физика',                 emoji: '⚛️', file: 'data/physics.js' },
+      { id: 'matan',   title: 'Математический анализ', emoji: '📈', img: 'images/matan.png',   file: 'data/matan.js'   },
+      { id: 'diskra',  title: 'Дискретная математика',  emoji: '🔷', img: 'images/diskra.png',  file: 'data/diskra.js'  },
+      { id: 'physics', title: 'Физика',                 emoji: '⚛️', img: 'images/physics.jpg', file: 'data/physics.js' },
     ];
 
     // Стрик
@@ -118,7 +118,10 @@
       a.className = 'subject-card';
       a.href = `subject.html?subject=${s.id}`;
       a.innerHTML = `
-        <div class="subject-emoji">${s.emoji}</div>
+        ${s.img
+        ? `<img src="${s.img}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">`
+        : `<div class="subject-emoji">${s.emoji}</div>`
+      }
         <div class="subject-info">
           <div class="subject-title">${s.title}</div>
           <div class="subject-meta">Знаю ${knownCount} карточек</div>
