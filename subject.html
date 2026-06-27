@@ -387,7 +387,12 @@
 
     function init(s) {
       document.title = s.title;
-      document.getElementById('nav-title').textContent = s.emoji + ' ' + s.title;
+      const navTitle = document.getElementById('nav-title');
+      if (s.img) {
+        navTitle.innerHTML = `<img src="${s.img}" style="width:24px; height:24px; border-radius:4px; object-fit:cover; vertical-align:middle; margin-right:8px;">${s.title}`;
+      } else {
+        navTitle.textContent = s.emoji + ' ' + s.title;
+      }
 
       // Стрик
       let streak = parseInt(localStorage.getItem('streak') || '0');

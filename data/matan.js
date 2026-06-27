@@ -2,6 +2,7 @@ const SUBJECT = {
   id: 'matan',
   title: 'Математический анализ',
   emoji: '📈',
+  img: 'images/matan.png', 
   cards: [
     {
       q: "Определение производной $f'(x)$",
